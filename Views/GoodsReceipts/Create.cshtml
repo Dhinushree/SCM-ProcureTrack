@@ -1,0 +1,282 @@
+
+@model DotNetAssignmentApp.ViewModels.GoodsReceiptViewModel
+
+@{
+    ViewData["Title"] = "Create Goods Receipt";
+
+    var receiptItems = Model.Items ??
+        new List<DotNetAssignmentApp.ViewModels.GoodsReceiptItemViewModel>();
+
+    bool isPOSelected = receiptItems.Any();
+}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Create Goods Receipt Note (GRN)</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <form asp-controller="GoodsReceipts"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="All"
+                     class="text-danger mb-3"></div>
+
+                <h5 class="mb-3">Receipt Details</h5>
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="PurchaseOrderId"
+                               class="form-label">
+                            Purchase Order
+                        </label>
+
+                        @if (isPOSelected)
+                        {
+                            <input type="hidden"
+                                   asp-for="PurchaseOrderId" />
+
+                            <input type="text"
+                                   value="@ViewBag.PONumber"
+                                   class="form-control"
+                                   readonly />
+                        }
+                        else
+                        {
+                            <select asp-for="PurchaseOrderId"
+                                    asp-items="ViewBag.PurchaseOrders"
+                                    class="form-select"
+                                    onchange="loadPurchaseOrderItems(this.value)">
+
+                                <option value="">
+                                    -- Select Purchase Order --
+                                </option>
+
+                            </select>
+                        }
+
+                        <span asp-validation-for="PurchaseOrderId"
+                              class="text-danger"></span>
+
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="ReceiptDate"
+                               class="form-label">
+                            Receipt Date
+                        </label>
+
+                        <input asp-for="ReceiptDate"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="ReceiptDate"
+                              class="text-danger"></span>
+
+                    </div>
+
+                    <div class="col-md-12 mb-3">
+
+                        <label asp-for="Remarks"
+                               class="form-label">
+                            Remarks
+                        </label>
+
+                        <textarea asp-for="Remarks"
+                                  class="form-control"
+                                  rows="2"
+                                  placeholder="Enter receipt remarks"></textarea>
+
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <h5 class="mb-3">Received Items</h5>
+
+                @if (isPOSelected)
+                {
+                    @for (int i = 0; i < receiptItems.Count; i++)
+                    {
+                        <div class="card mb-3 border">
+
+                            <div class="card-body">
+
+                                <h6 class="mb-3">
+                                    @receiptItems[i].ItemName
+                                </h6>
+
+                                <input type="hidden"
+                                       asp-for="Items[i].PurchaseOrderDetailId" />
+
+                                <input type="hidden"
+                                       asp-for="Items[i].ItemName" />
+
+                                <input type="hidden"
+                                       asp-for="Items[i].OrderedQuantity" />
+
+                                <input type="hidden"
+                                       asp-for="Items[i].PreviouslyAcceptedQuantity" />
+
+                                <div class="row">
+
+                                    <div class="col-md-3 mb-3">
+
+                                        <label class="form-label">
+                                            Ordered Quantity
+                                        </label>
+
+                                        <input value="@receiptItems[i].OrderedQuantity"
+                                               class="form-control"
+                                               readonly />
+
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+
+                                        <label class="form-label">
+                                            Previously Accepted
+                                        </label>
+
+                                        <input value="@receiptItems[i].PreviouslyAcceptedQuantity"
+                                               class="form-control"
+                                               readonly />
+
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+
+                                        <label asp-for="Items[i].ReceivedQuantity"
+                                               class="form-label">
+                                            Received Quantity
+                                        </label>
+
+                                        <input asp-for="Items[i].ReceivedQuantity"
+                                               type="number"
+                                               step="0.001"
+                                               min="0"
+                                               class="form-control"
+                                               required />
+
+                                        <span asp-validation-for="Items[i].ReceivedQuantity"
+                                              class="text-danger"></span>
+
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+
+                                        <label asp-for="Items[i].AcceptedQuantity"
+                                               class="form-label">
+                                            Accepted Quantity
+                                        </label>
+
+                                        <input asp-for="Items[i].AcceptedQuantity"
+                                               type="number"
+                                               step="0.001"
+                                               min="0"
+                                               class="form-control"
+                                               required />
+
+                                        <span asp-validation-for="Items[i].AcceptedQuantity"
+                                              class="text-danger"></span>
+
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+
+                                        <label asp-for="Items[i].RejectedQuantity"
+                                               class="form-label">
+                                            Rejected Quantity
+                                        </label>
+
+                                        <input asp-for="Items[i].RejectedQuantity"
+                                               type="number"
+                                               step="0.001"
+                                               min="0"
+                                               class="form-control"
+                                               required />
+
+                                        <span asp-validation-for="Items[i].RejectedQuantity"
+                                              class="text-danger"></span>
+
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+
+                                        <label asp-for="Items[i].InspectionRemarks"
+                                               class="form-label">
+                                            Inspection Remarks
+                                        </label>
+
+                                        <input asp-for="Items[i].InspectionRemarks"
+                                               class="form-control"
+                                               placeholder="Enter inspection remarks" />
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">
+                        Select an approved Purchase Order to load its items.
+                    </p>
+                }
+
+                <hr />
+
+                @if (isPOSelected)
+                {
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Save GRN
+                    </button>
+                }
+
+                <a asp-controller="GoodsReceipts"
+                   asp-action="Index"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        function loadPurchaseOrderItems(purchaseOrderId) {
+
+            if (!purchaseOrderId) {
+                return;
+            }
+
+            const url = '@Url.Action("CreateForPO", "GoodsReceipts")';
+
+            window.location.href =
+                url + '?purchaseOrderId=' +
+                encodeURIComponent(purchaseOrderId);
+        }
+    </script>
+}

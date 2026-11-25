@@ -1,0 +1,130 @@
+﻿
+@{
+    ViewData["Title"] = "SCM Dashboard";
+}
+
+<div class="container-fluid mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">SCM ProcureTrack Dashboard</h2>
+            <p class="text-muted">Supply Chain Management Overview</p>
+        </div>
+        <span class="badge bg-success fs-6">System Active</span>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Total Vendors -->
+        <div class="col-md-4 col-lg">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Vendors</h6>
+                    <h2 class="fw-bold text-primary">
+                        @ViewBag.TotalVendors
+                    </h2>
+                    <a asp-controller="Vendors" asp-action="Index"
+                       class="btn btn-sm btn-outline-primary">
+                        View Vendors
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Purchase Orders -->
+        <div class="col-md-4 col-lg">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Purchase Orders</h6>
+                    <h2 class="fw-bold text-info">
+                        @ViewBag.TotalPurchaseOrders
+                    </h2>
+                    <a asp-controller="PurchaseOrders" asp-action="Index"
+                       class="btn btn-sm btn-outline-info">
+                        View Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Purchase Orders -->
+        <div class="col-md-4 col-lg">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Open Purchase Orders</h6>
+                    <h2 class="fw-bold text-warning">
+                        @ViewBag.OpenPurchaseOrders
+                    </h2>
+                    <a asp-controller="PurchaseOrders" asp-action="Index"
+                       class="btn btn-sm btn-outline-warning">
+                        Track Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Delivery Value -->
+        <div class="col-md-6 col-lg">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Pending Delivery Value</h6>
+                    <h3 class="fw-bold text-danger">
+                        ₹@(((decimal)ViewBag.PendingDeliveryValue).ToString("N2"))
+                    </h3>
+                    <small class="text-muted">Based on open PO value</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Items -->
+        <div class="col-md-6 col-lg">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Low Stock Items</h6>
+                    <h2 class="fw-bold text-danger">
+                        @ViewBag.LowStockItems
+                    </h2>
+                    <a asp-controller="Items" asp-action="Index"
+                       class="btn btn-sm btn-outline-danger">
+                        View Items
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3">Quick Actions</h5>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-controller="Vendors" asp-action="Create"
+                   class="btn btn-primary">
+                    + Add Vendor
+                </a>
+
+                <a asp-controller="Items" asp-action="Create"
+                   class="btn btn-success">
+                    + Add Item
+                </a>
+
+                <a asp-controller="PurchaseOrders" asp-action="Create"
+                   class="btn btn-info text-white">
+                    + Create Purchase Order
+                </a>
+
+                <a asp-controller="GoodsReceipts" asp-action="Index"
+                   class="btn btn-warning">
+                    View GRN
+                </a>
+
+                <a asp-controller="Inventory" asp-action="Index"
+                   class="btn btn-secondary">
+                    Inventory Ledger
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>

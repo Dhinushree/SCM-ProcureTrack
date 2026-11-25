@@ -1,0 +1,97 @@
+@model IEnumerable<DotNetAssignmentApp.Models.Item>
+
+@{
+    ViewData["Title"] = "Item Master";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Item / Material Master</h2>
+
+        <a asp-action="Create" class="btn btn-primary">
+            + Add New Item
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table class="table table-bordered table-hover">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>Item Code</th>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>UOM</th>
+                        <th>Reorder Level</th>
+                        <th>Current Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.ItemCode</td>
+                                <td>@item.ItemName</td>
+                                <td>@item.Category</td>
+                                <td>@item.UnitOfMeasure</td>
+                                <td>@item.ReorderLevel</td>
+                                <td>@item.CurrentStock</td>
+
+                                <td>
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <a asp-action="Edit"
+                                       asp-route-id="@item.ItemId"
+                                       class="btn btn-sm btn-warning">
+                                        Edit
+                                    </a>
+
+                                    <form asp-action="ToggleStatus"
+                                          asp-route-id="@item.ItemId"
+                                          method="post"
+                                          class="d-inline">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-secondary">
+                                            @(item.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                No items found. Please add an item.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>

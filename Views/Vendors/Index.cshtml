@@ -1,0 +1,104 @@
+@model IEnumerable<DotNetAssignmentApp.Models.Vendor>
+
+@{
+    ViewData["Title"] = "Vendor Master";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Vendor Master</h2>
+
+        <a asp-action="Create" class="btn btn-primary">
+            + Add New Vendor
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table class="table table-bordered table-hover">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>Vendor Code</th>
+                        <th>Company Name</th>
+                        <th>Contact Person</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Payment Terms</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var vendor in Model)
+                        {
+                            <tr>
+                                <td>@vendor.VendorCode</td>
+                                <td>@vendor.CompanyName</td>
+                                <td>@vendor.ContactPerson</td>
+                                <td>@vendor.Email</td>
+                                <td>@vendor.Phone</td>
+                                <td>@vendor.PaymentTerms</td>
+
+                                <td>
+                                    @if (vendor.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+1.	
+                                <td>
+                                    <a asp-action="Edit"
+                                       asp-route-id="@vendor.VendorId"
+                                       class="btn btn-sm btn-warning">
+                                        Edit
+                                    </a>
+
+                                    <form asp-action="ToggleStatus"
+                                          asp-route-id="@vendor.VendorId"
+                                          method="post"
+                                          class="d-inline">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-secondary">
+                                            @(vendor.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                No vendors found. Please add a vendor.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,98 @@
+
+@model IEnumerable<DotNetAssignmentApp.Models.GoodsReceiptNote>
+
+@{
+    ViewData["Title"] = "Goods Receipt Notes";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Goods Receipt Notes</h2>
+
+        <a asp-action="Create" class="btn btn-primary">
+            + Create GRN
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table class="table table-bordered table-hover">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>GRN Number</th>
+                        <th>Purchase Order</th>
+                        <th>Receipt Date</th>
+                        <th>Remarks</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var grn in Model)
+                        {
+                            <tr>
+                                <td>@grn.GRNNumber</td>
+
+                                <td>@grn.PurchaseOrder?.PONumber</td>
+
+                                <td>
+                                    @grn.ReceiptDate.ToString("dd-MM-yyyy")
+                                </td>
+
+                                <td>@grn.Remarks</td>
+
+                                <td>
+                                    @if (grn.Status == "Posted")
+                                    {
+                                        <span class="badge bg-success">
+                                            Posted
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            @grn.Status
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                No Goods Receipt Notes found.
+                                Please create a GRN.
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>

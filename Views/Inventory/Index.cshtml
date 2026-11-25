@@ -1,0 +1,167 @@
+
+@model IEnumerable<DotNetAssignmentApp.Models.InventoryLedger>
+
+@{
+    ViewData["Title"] = "Inventory Ledger";
+}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Inventory Stock Ledger</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            <form asp-action="Index" method="get">
+
+                <div class="row align-items-end">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Filter By Item
+                        </label>
+
+                        <select name="itemId"
+                                class="form-select">
+
+                            <option value="">
+                                -- All Items --
+                            </option>
+
+                            @foreach (var item in ViewBag.Items)
+                            {
+                                if (ViewBag.SelectedItemId != null &&
+                                    (int)ViewBag.SelectedItemId == item.ItemId)
+                                {
+                                    <option value="@item.ItemId" selected>
+                                        @item.ItemCode - @item.ItemName
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@item.ItemId">
+                                        @item.ItemCode - @item.ItemName
+                                    </option>
+                                }
+                            }
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Search
+                        </button>
+
+                        <a asp-action="Index"
+                           class="btn btn-secondary">
+                            Reset
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <table class="table table-bordered table-hover">
+
+                <thead class="table-dark">
+
+                    <tr>
+                        <th>Transaction Date</th>
+                        <th>Item Code</th>
+                        <th>Item Name</th>
+                        <th>Transaction Type</th>
+                        <th>Quantity</th>
+                        <th>Balance After</th>
+                        <th>Reference Number</th>
+                        <th>Remarks</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var ledger in Model)
+                        {
+                            <tr>
+
+                                <td>
+                                    @ledger.TransactionDate.ToString("dd-MM-yyyy HH:mm")
+                                </td>
+
+                                <td>
+                                    @ledger.Item?.ItemCode
+                                </td>
+
+                                <td>
+                                    @ledger.Item?.ItemName
+                                </td>
+
+                                <td>
+                                    @if (ledger.TransactionType == "IN")
+                                    {
+                                        <span class="badge bg-success">
+                                            Stock In
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            Stock Out
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @ledger.Quantity.ToString("N3")
+                                </td>
+
+                                <td>
+                                    @ledger.BalanceAfter.ToString("N3")
+                                </td>
+
+                                <td>
+                                    @ledger.ReferenceNumber
+                                </td>
+
+                                <td>
+                                    @ledger.Remarks
+                                </td>
+
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8"
+                                class="text-center">
+                                No inventory transactions found.
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
