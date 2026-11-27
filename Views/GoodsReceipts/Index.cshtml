@@ -41,6 +41,7 @@
                         <th>Receipt Date</th>
                         <th>Remarks</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -75,13 +76,21 @@
                                         </span>
                                     }
                                 </td>
+
+                                <td>
+                                    <a asp-action="Details"
+                                       asp-route-id="@grn.GoodsReceiptNoteId"
+                                       class="btn btn-sm btn-info">
+                                        View Details
+                                    </a>
+                                </td>
                             </tr>
                         }
                     }
                     else
                     {
                         <tr>
-                            <td colspan="5" class="text-center">
+                            <td colspan="6" class="text-center">
                                 No Goods Receipt Notes found.
                                 Please create a GRN.
                             </td>

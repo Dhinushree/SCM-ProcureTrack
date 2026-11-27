@@ -33,6 +33,25 @@ namespace DotNetAssignmentApp.Controllers
             return View(receipts);
         }
 
+        // GET: GoodsReceipts/Details/5
+        public async Task<IActionResult> Details(int id)
+        {
+            var grn = await _context.GoodsReceiptNotes
+                .Include(g => g.PurchaseOrder)
+                .Include(g => g.ReceiptDetails)
+                    .ThenInclude(d => d.PurchaseOrderDetail)
+                        .ThenInclude(p => p!.Item)
+                .FirstOrDefaultAsync(g =>
+                    g.GoodsReceiptNoteId == id);
+
+            if (grn == null)
+            {
+                return NotFound();
+            }
+
+            return View(grn);
+        }
+
         // GET: GoodsReceipts/Create
         public async Task<IActionResult> Create()
         {
