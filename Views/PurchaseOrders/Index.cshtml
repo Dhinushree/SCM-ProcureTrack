@@ -1,3 +1,4 @@
+
 @model IEnumerable<DotNetAssignmentApp.Models.PurchaseOrder>
 
 @{
@@ -8,6 +9,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Purchase Orders</h2>
+
         <a asp-action="Create" class="btn btn-primary">
             + Create Purchase Order
         </a>
@@ -15,140 +17,286 @@
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success">@TempData["Success"]</div>
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
     }
 
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger">@TempData["Error"]</div>
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
     }
 
-    <div class="card shadow-sm">
+    @if (ViewBag.FilterError != null)
+    {
+        <div class="alert alert-warning">
+            @ViewBag.FilterError
+        </div>
+    }
+
+    <!-- Purchase Order Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <strong>Search and Filter Purchase Orders</strong>
+        </div>
+
         <div class="card-body">
 
-            <table class="table table-bordered table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>PO Number</th>
-                        <th>Vendor</th>
-                        <th>Order Date</th>
-                        <th>Expected Delivery</th>
-                        <th>Subtotal</th>
-                        <th>Tax Amount</th>
-                        <th>Grand Total</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
+            <form asp-controller="PurchaseOrders"
+                  asp-action="Index"
+                  method="get">
 
-                <tbody>
-                    @if (Model.Any())
-                    {
-                        @foreach (var po in Model)
-                        {
-                            <tr>
-                                <td>@po.PONumber</td>
-                                <td>@po.Vendor?.CompanyName</td>
-                                <td>@po.OrderDate.ToString("dd-MM-yyyy")</td>
-                                <td>@po.ExpectedDeliveryDate.ToString("dd-MM-yyyy")</td>
-                                <td>@po.Subtotal.ToString("N2")</td>
-                                <td>@po.TaxAmount.ToString("N2")</td>
-                                <td>@po.GrandTotal.ToString("N2")</td>
+                <div class="row g-3">
 
-                                <td>
-                                    @if (po.Status == "Draft")
-                                    {
-                                        <span class="badge bg-secondary">Draft</span>
-                                    }
-                                    else if (po.Status == "Approved")
-                                    {
-                                        <span class="badge bg-success">Approved</span>
-                                    }
-                                    else if (po.Status == "Partially Received")
-                                    {
-                                        <span class="badge bg-warning text-dark">Partially Received</span>
-                                    }
-                                    else if (po.Status == "Completed")
-                                    {
-                                        <span class="badge bg-primary">Completed</span>
-                                    }
-                                    else if (po.Status == "Cancelled")
-                                    {
-                                        <span class="badge bg-danger">Cancelled</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">@po.Status</span>
-                                    }
-                                </td>
+                    <!-- Vendor Filter -->
+                    <div class="col-md-3">
+                        <label for="vendorId" class="form-label">
+                            Vendor
+                        </label>
 
-                                <td>
-                                    <div class="d-flex gap-2 flex-wrap">
+                        <select id="vendorId"
+                                name="vendorId"
+                                class="form-select"
+                                asp-items="ViewBag.Vendors">
 
-                                        @if (po.Status == "Draft")
-                                        {
-                                            <form asp-action="Approve"
-                                                  asp-route-id="@po.PurchaseOrderId"
-                                                  method="post">
-                                                @Html.AntiForgeryToken()
+                            <option value="">All Vendors</option>
 
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-success">
-                                                    Approve
-                                                </button>
-                                            </form>
-                                        }
+                        </select>
+                    </div>
 
-                                        @if (po.Status == "Approved" ||
-                                             po.Status == "Partially Received")
-                                        {
-                                            <a asp-controller="GoodsReceipts"
-                                               asp-action="CreateForPO"
-                                               asp-route-purchaseOrderId="@po.PurchaseOrderId"
-                                               class="btn btn-sm btn-primary">
-                                                Receive Goods
-                                            </a>
-                                        }
+                    <!-- From Date -->
+                    <div class="col-md-3">
+                        <label for="fromDate" class="form-label">
+                            From Date
+                        </label>
 
-                                        @if (po.Status == "Draft" ||
-                                             po.Status == "Approved")
-                                        {
-                                            <form asp-action="Cancel"
-                                                  asp-route-id="@po.PurchaseOrderId"
-                                                  method="post"
-                                                  onsubmit="return confirm('Are you sure you want to cancel this Purchase Order?');">
-                                                @Html.AntiForgeryToken()
+                        <input type="date"
+                               id="fromDate"
+                               name="fromDate"
+                               value="@ViewBag.FromDate"
+                               class="form-control" />
+                    </div>
 
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-danger">
-                                                    Cancel
-                                                </button>
-                                            </form>
-                                        }
+                    <!-- To Date -->
+                    <div class="col-md-3">
+                        <label for="toDate" class="form-label">
+                            To Date
+                        </label>
 
-                                        @if (po.Status == "Completed" ||
-                                             po.Status == "Cancelled" ||
-                                             po.Status == "Partially Received")
-                                        {
-                                            <span class="text-muted">No further actions</span>
-                                        }
+                        <input type="date"
+                               id="toDate"
+                               name="toDate"
+                               value="@ViewBag.ToDate"
+                               class="form-control" />
+                    </div>
 
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="9" class="text-center">
-                                No Purchase Orders found.
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    <!-- Status Filter -->
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">
+                            PO Status
+                        </label>
+
+                        <select id="status"
+                                name="status"
+                                class="form-select"
+                                asp-items="ViewBag.Statuses">
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Apply Filters
+                    </button>
+
+                    <a asp-controller="PurchaseOrders"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+                        Clear Filters
+                    </a>
+
+                </div>
+
+            </form>
 
         </div>
     </div>
+
+    <!-- Purchase Order List -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover">
+
+                    <thead class="table-dark">
+                        <tr>
+                            <th>PO Number</th>
+                            <th>Vendor</th>
+                            <th>Order Date</th>
+                            <th>Expected Delivery</th>
+                            <th>Subtotal</th>
+                            <th>Tax Amount</th>
+                            <th>Grand Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @if (Model.Any())
+                        {
+                            @foreach (var po in Model)
+                            {
+                                <tr>
+
+                                    <td>@po.PONumber</td>
+
+                                    <td>@po.Vendor?.CompanyName</td>
+
+                                    <td>
+                                        @po.OrderDate.ToString("dd-MM-yyyy")
+                                    </td>
+
+                                    <td>
+                                        @po.ExpectedDeliveryDate.ToString("dd-MM-yyyy")
+                                    </td>
+
+                                    <td>@po.Subtotal.ToString("N2")</td>
+
+                                    <td>@po.TaxAmount.ToString("N2")</td>
+
+                                    <td>@po.GrandTotal.ToString("N2")</td>
+
+                                    <td>
+                                        @if (po.Status == "Draft")
+                                        {
+                                            <span class="badge bg-secondary">
+                                                Draft
+                                            </span>
+                                        }
+                                        else if (po.Status == "Approved")
+                                        {
+                                            <span class="badge bg-success">
+                                                Approved
+                                            </span>
+                                        }
+                                        else if (po.Status == "Partially Received")
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                Partially Received
+                                            </span>
+                                        }
+                                        else if (po.Status == "Completed")
+                                        {
+                                            <span class="badge bg-primary">
+                                                Completed
+                                            </span>
+                                        }
+                                        else if (po.Status == "Cancelled")
+                                        {
+                                            <span class="badge bg-danger">
+                                                Cancelled
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                @po.Status
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+
+                                            @if (po.Status == "Draft")
+                                            {
+                                                <form asp-action="Approve"
+                                                      asp-route-id="@po.PurchaseOrderId"
+                                                      method="post">
+
+                                                    @Html.AntiForgeryToken()
+
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-success">
+                                                        Approve
+                                                    </button>
+
+                                                </form>
+                                            }
+
+                                            @if (po.Status == "Approved" ||
+                                                 po.Status == "Partially Received")
+                                            {
+                                                <a asp-controller="GoodsReceipts"
+                                                   asp-action="CreateForPO"
+                                                   asp-route-purchaseOrderId="@po.PurchaseOrderId"
+                                                   class="btn btn-sm btn-primary">
+                                                    Receive Goods
+                                                </a>
+                                            }
+
+                                            @if (po.Status == "Draft" ||
+                                                 po.Status == "Approved")
+                                            {
+                                                <form asp-action="Cancel"
+                                                      asp-route-id="@po.PurchaseOrderId"
+                                                      method="post"
+                                                      onsubmit="return confirm('Are you sure you want to cancel this Purchase Order?');">
+
+                                                    @Html.AntiForgeryToken()
+
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-danger">
+                                                        Cancel
+                                                    </button>
+
+                                                </form>
+                                            }
+
+                                            @if (po.Status == "Completed" ||
+                                                 po.Status == "Cancelled" ||
+                                                 po.Status == "Partially Received")
+                                            {
+                                                <span class="text-muted">
+                                                    No further actions
+                                                </span>
+                                            }
+
+                                        </div>
+                                    </td>
+
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center">
+                                    No Purchase Orders found for the selected filters.
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="text-muted mt-2">
+                Total records displayed: @Model.Count()
+            </div>
+
+        </div>
+    </div>
+
 </div>

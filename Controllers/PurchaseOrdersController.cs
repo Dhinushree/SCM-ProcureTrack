@@ -20,12 +20,82 @@ namespace DotNetAssignmentApp.Controllers
         }
 
         // GET: PurchaseOrders
-        public async Task<IActionResult> Index()
+        // Supports Vendor, Date Range and Status filters
+        public async Task<IActionResult> Index(
+            int? vendorId,
+            DateTime? fromDate,
+            DateTime? toDate,
+            string? status)
         {
-            var orders = await _context.PurchaseOrders
+            var query = _context.PurchaseOrders
                 .Include(po => po.Vendor)
+                .AsQueryable();
+
+            // Vendor filter
+            if (vendorId.HasValue && vendorId.Value > 0)
+            {
+                query = query.Where(po =>
+                    po.VendorId == vendorId.Value);
+            }
+
+            // Date range validation
+            bool validDateRange =
+                !fromDate.HasValue ||
+                !toDate.HasValue ||
+                fromDate.Value.Date <= toDate.Value.Date;
+
+            if (validDateRange)
+            {
+                if (fromDate.HasValue)
+                {
+                    query = query.Where(po =>
+                        po.OrderDate >= fromDate.Value.Date);
+                }
+
+                if (toDate.HasValue)
+                {
+                    var exclusiveEndDate =
+                        toDate.Value.Date.AddDays(1);
+
+                    query = query.Where(po =>
+                        po.OrderDate < exclusiveEndDate);
+                }
+            }
+
+            // PO Status filter
+            var allowedStatuses = new[]
+            {
+                "Draft",
+                "Approved",
+                "Partially Received",
+                "Completed",
+                "Cancelled"
+            };
+
+            if (!string.IsNullOrWhiteSpace(status) &&
+                allowedStatuses.Contains(status))
+            {
+                query = query.Where(po =>
+                    po.Status == status);
+            }
+
+            var orders = await query
                 .OrderByDescending(po => po.OrderDate)
                 .ToListAsync();
+
+            // Load filter dropdowns and preserve selections
+            await LoadFilterDropdowns(vendorId, status);
+
+            ViewBag.VendorId = vendorId;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            ViewBag.SelectedStatus = status;
+
+            if (!validDateRange)
+            {
+                ViewBag.FilterError =
+                    "From Date cannot be later than To Date.";
+            }
 
             return View(orders);
         }
@@ -249,7 +319,66 @@ namespace DotNetAssignmentApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Load active vendors and items
+        // Load Vendor and Status filter dropdowns
+        private async Task LoadFilterDropdowns(
+            int? selectedVendorId,
+            string? selectedStatus)
+        {
+            var vendors = await _context.Vendors
+                .OrderBy(v => v.CompanyName)
+                .ToListAsync();
+
+            ViewBag.Vendors = new SelectList(
+                vendors,
+                "VendorId",
+                "CompanyName",
+                selectedVendorId
+            );
+
+            var statuses = new List<SelectListItem>
+            {
+                new SelectListItem
+                {
+                    Value = "",
+                    Text = "All Statuses"
+                },
+                new SelectListItem
+                {
+                    Value = "Draft",
+                    Text = "Draft"
+                },
+                new SelectListItem
+                {
+                    Value = "Approved",
+                    Text = "Approved"
+                },
+                new SelectListItem
+                {
+                    Value = "Partially Received",
+                    Text = "Partially Received"
+                },
+                new SelectListItem
+                {
+                    Value = "Completed",
+                    Text = "Completed"
+                },
+                new SelectListItem
+                {
+                    Value = "Cancelled",
+                    Text = "Cancelled"
+                }
+            };
+
+            foreach (var item in statuses)
+            {
+                item.Selected =
+                    item.Value == (selectedStatus ?? "");
+            }
+
+            ViewBag.Statuses = statuses;
+        }
+
+        // Load active vendors and items for PO creation
         private async Task LoadDropdowns()
         {
             ViewBag.Vendors = new SelectList(
