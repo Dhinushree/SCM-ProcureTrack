@@ -20,7 +20,6 @@ namespace DotNetAssignmentApp.Controllers
         }
 
         // GET: PurchaseOrders
-        // Supports Vendor, Date Range and Status filters
         public async Task<IActionResult> Index(
             int? vendorId,
             DateTime? fromDate,
@@ -31,14 +30,12 @@ namespace DotNetAssignmentApp.Controllers
                 .Include(po => po.Vendor)
                 .AsQueryable();
 
-            // Vendor filter
             if (vendorId.HasValue && vendorId.Value > 0)
             {
                 query = query.Where(po =>
                     po.VendorId == vendorId.Value);
             }
 
-            // Date range validation
             bool validDateRange =
                 !fromDate.HasValue ||
                 !toDate.HasValue ||
@@ -62,7 +59,6 @@ namespace DotNetAssignmentApp.Controllers
                 }
             }
 
-            // PO Status filter
             var allowedStatuses = new[]
             {
                 "Draft",
@@ -75,15 +71,13 @@ namespace DotNetAssignmentApp.Controllers
             if (!string.IsNullOrWhiteSpace(status) &&
                 allowedStatuses.Contains(status))
             {
-                query = query.Where(po =>
-                    po.Status == status);
+                query = query.Where(po => po.Status == status);
             }
 
             var orders = await query
                 .OrderByDescending(po => po.OrderDate)
                 .ToListAsync();
 
-            // Load filter dropdowns and preserve selections
             await LoadFilterDropdowns(vendorId, status);
 
             ViewBag.VendorId = vendorId;
@@ -122,58 +116,7 @@ namespace DotNetAssignmentApp.Controllers
         {
             model.Items ??= new List<PurchaseOrderItemViewModel>();
 
-            if (!model.Items.Any())
-            {
-                ModelState.AddModelError(
-                    "",
-                    "Add at least one item to the Purchase Order."
-                );
-            }
-
-            if (ModelState.IsValid)
-            {
-                var vendorExists = await _context.Vendors
-                    .AnyAsync(v =>
-                        v.VendorId == model.VendorId &&
-                        v.IsActive
-                    );
-
-                if (!vendorExists)
-                {
-                    ModelState.AddModelError(
-                        "VendorId",
-                        "Select a valid active vendor."
-                    );
-                }
-
-                var itemIds = model.Items
-                    .Select(x => x.ItemId)
-                    .Distinct()
-                    .ToList();
-
-                var validItemCount = await _context.Items
-                    .CountAsync(i =>
-                        itemIds.Contains(i.ItemId) &&
-                        i.IsActive
-                    );
-
-                if (validItemCount != itemIds.Count)
-                {
-                    ModelState.AddModelError(
-                        "",
-                        "Select valid active items."
-                    );
-                }
-
-                if (model.ExpectedDeliveryDate.Date <
-                    model.OrderDate.Date)
-                {
-                    ModelState.AddModelError(
-                        "ExpectedDeliveryDate",
-                        "Expected delivery date cannot be before order date."
-                    );
-                }
-            }
+            ValidatePurchaseOrder(model);
 
             if (!ModelState.IsValid)
             {
@@ -216,24 +159,250 @@ namespace DotNetAssignmentApp.Controllers
                 OrderDate = model.OrderDate,
                 ExpectedDeliveryDate = model.ExpectedDeliveryDate,
                 Remarks = model.Remarks,
-
                 Status = "Draft",
-
                 Subtotal = subtotal,
                 TaxAmount = taxAmount,
                 GrandTotal = subtotal + taxAmount,
-
                 OrderDetails = orderDetails
             };
 
             _context.PurchaseOrders.Add(purchaseOrder);
-
             await _context.SaveChangesAsync();
 
             TempData["Success"] =
                 "Purchase Order created successfully.";
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: PurchaseOrders/Edit/5
+        public async Task<IActionResult> Edit(int id)
+        {
+            var purchaseOrder = await _context.PurchaseOrders
+                .Include(po => po.OrderDetails)
+                .FirstOrDefaultAsync(po =>
+                    po.PurchaseOrderId == id);
+
+            if (purchaseOrder == null)
+            {
+                return NotFound();
+            }
+
+            if (purchaseOrder.Status != "Draft")
+            {
+                TempData["Error"] =
+                    "Only Draft Purchase Orders can be edited.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            bool hasPostedGRN = await _context.GoodsReceiptNotes
+                .AnyAsync(grn =>
+                    grn.PurchaseOrderId == id &&
+                    grn.Status == "Posted");
+
+            if (hasPostedGRN)
+            {
+                TempData["Error"] =
+                    "Purchase Order cannot be edited because a GRN has already been posted.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            var model = new PurchaseOrderViewModel
+            {
+                VendorId = purchaseOrder.VendorId,
+                OrderDate = purchaseOrder.OrderDate,
+                ExpectedDeliveryDate =
+                    purchaseOrder.ExpectedDeliveryDate,
+                Remarks = purchaseOrder.Remarks,
+
+                Items = purchaseOrder.OrderDetails
+                    .Select(detail => new PurchaseOrderItemViewModel
+                    {
+                        ItemId = detail.ItemId,
+                        OrderedQuantity = detail.OrderedQuantity,
+                        UnitPrice = detail.UnitPrice,
+                        TaxPercentage = detail.TaxPercentage
+                    })
+                    .ToList()
+            };
+
+            await LoadEditDropdowns();
+
+            ViewBag.PurchaseOrderId = id;
+            ViewBag.PONumber = purchaseOrder.PONumber;
+
+            return View(model);
+        }
+
+        // POST: PurchaseOrders/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(
+            int id,
+            PurchaseOrderViewModel model)
+        {
+            model.Items ??= new List<PurchaseOrderItemViewModel>();
+
+            var purchaseOrder = await _context.PurchaseOrders
+                .Include(po => po.OrderDetails)
+                .FirstOrDefaultAsync(po =>
+                    po.PurchaseOrderId == id);
+
+            if (purchaseOrder == null)
+            {
+                return NotFound();
+            }
+
+            if (purchaseOrder.Status != "Draft")
+            {
+                TempData["Error"] =
+                    "Only Draft Purchase Orders can be edited.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            bool hasPostedGRN = await _context.GoodsReceiptNotes
+                .AnyAsync(grn =>
+                    grn.PurchaseOrderId == id &&
+                    grn.Status == "Posted");
+
+            if (hasPostedGRN)
+            {
+                TempData["Error"] =
+                    "Purchase Order cannot be edited because a GRN has already been posted.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            ValidatePurchaseOrder(model);
+
+            if (!ModelState.IsValid)
+            {
+                await LoadEditDropdowns();
+
+                ViewBag.PurchaseOrderId = id;
+                ViewBag.PONumber = purchaseOrder.PONumber;
+
+                return View(model);
+            }
+
+            // Validate active vendor
+            bool vendorExists = await _context.Vendors
+                .AnyAsync(v =>
+                    v.VendorId == model.VendorId &&
+                    v.IsActive);
+
+            if (!vendorExists)
+            {
+                ModelState.AddModelError(
+                    nameof(model.VendorId),
+                    "Select a valid active vendor.");
+            }
+
+            // Validate active items
+            var itemIds = model.Items
+                .Select(x => x.ItemId)
+                .Distinct()
+                .ToList();
+
+            int validItemCount = await _context.Items
+                .CountAsync(item =>
+                    itemIds.Contains(item.ItemId) &&
+                    item.IsActive);
+
+            if (validItemCount != itemIds.Count)
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Select valid active items.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await LoadEditDropdowns();
+
+                ViewBag.PurchaseOrderId = id;
+                ViewBag.PONumber = purchaseOrder.PONumber;
+
+                return View(model);
+            }
+
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                purchaseOrder.VendorId = model.VendorId;
+                purchaseOrder.OrderDate = model.OrderDate;
+                purchaseOrder.ExpectedDeliveryDate =
+                    model.ExpectedDeliveryDate;
+                purchaseOrder.Remarks = model.Remarks;
+
+                // Remove existing line items
+                _context.PurchaseOrderDetails.RemoveRange(
+                    purchaseOrder.OrderDetails);
+
+                decimal subtotal = 0;
+                decimal taxAmount = 0;
+
+                var updatedDetails =
+                    new List<PurchaseOrderDetail>();
+
+                foreach (var item in model.Items)
+                {
+                    decimal amount =
+                        item.OrderedQuantity * item.UnitPrice;
+
+                    decimal tax =
+                        amount * item.TaxPercentage / 100;
+
+                    subtotal += amount;
+                    taxAmount += tax;
+
+                    updatedDetails.Add(new PurchaseOrderDetail
+                    {
+                        PurchaseOrderId =
+                            purchaseOrder.PurchaseOrderId,
+
+                        ItemId = item.ItemId,
+                        OrderedQuantity = item.OrderedQuantity,
+                        UnitPrice = item.UnitPrice,
+                        TaxPercentage = item.TaxPercentage,
+                        Amount = amount + tax
+                    });
+                }
+
+                purchaseOrder.OrderDetails = updatedDetails;
+
+                purchaseOrder.Subtotal = subtotal;
+                purchaseOrder.TaxAmount = taxAmount;
+                purchaseOrder.GrandTotal = subtotal + taxAmount;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["Success"] =
+                    "Purchase Order updated successfully.";
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+
+                ModelState.AddModelError(
+                    "",
+                    "An error occurred while updating the Purchase Order. Please try again.");
+
+                await LoadEditDropdowns();
+
+                ViewBag.PurchaseOrderId = id;
+                ViewBag.PONumber = purchaseOrder.PONumber;
+
+                return View(model);
+            }
         }
 
         // POST: PurchaseOrders/Approve/5
@@ -243,8 +412,7 @@ namespace DotNetAssignmentApp.Controllers
         {
             var purchaseOrder = await _context.PurchaseOrders
                 .FirstOrDefaultAsync(po =>
-                    po.PurchaseOrderId == id
-                );
+                    po.PurchaseOrderId == id);
 
             if (purchaseOrder == null)
             {
@@ -276,15 +444,13 @@ namespace DotNetAssignmentApp.Controllers
         {
             var purchaseOrder = await _context.PurchaseOrders
                 .FirstOrDefaultAsync(po =>
-                    po.PurchaseOrderId == id
-                );
+                    po.PurchaseOrderId == id);
 
             if (purchaseOrder == null)
             {
                 return NotFound();
             }
 
-            // Only Draft and Approved POs can be cancelled
             if (purchaseOrder.Status != "Draft" &&
                 purchaseOrder.Status != "Approved")
             {
@@ -294,12 +460,10 @@ namespace DotNetAssignmentApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Do not cancel if goods have already been received
             bool hasPostedGRN = await _context.GoodsReceiptNotes
                 .AnyAsync(g =>
                     g.PurchaseOrderId == id &&
-                    g.Status == "Posted"
-                );
+                    g.Status == "Posted");
 
             if (hasPostedGRN)
             {
@@ -319,7 +483,34 @@ namespace DotNetAssignmentApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Load Vendor and Status filter dropdowns
+        // Common Purchase Order validation
+        private void ValidatePurchaseOrder(
+            PurchaseOrderViewModel model)
+        {
+            if (!model.Items.Any())
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Add at least one item to the Purchase Order.");
+            }
+
+            if (model.ExpectedDeliveryDate.Date <
+                model.OrderDate.Date)
+            {
+                ModelState.AddModelError(
+                    nameof(model.ExpectedDeliveryDate),
+                    "Expected delivery date cannot be before order date.");
+            }
+
+            if (model.Items.Any(item => item.ItemId <= 0))
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Select a valid item for every row.");
+            }
+        }
+
+        // Filter dropdowns
         private async Task LoadFilterDropdowns(
             int? selectedVendorId,
             string? selectedStatus)
@@ -332,8 +523,7 @@ namespace DotNetAssignmentApp.Controllers
                 vendors,
                 "VendorId",
                 "CompanyName",
-                selectedVendorId
-            );
+                selectedVendorId);
 
             var statuses = new List<SelectListItem>
             {
@@ -378,7 +568,7 @@ namespace DotNetAssignmentApp.Controllers
             ViewBag.Statuses = statuses;
         }
 
-        // Load active vendors and items for PO creation
+        // Dropdowns for Create
         private async Task LoadDropdowns()
         {
             ViewBag.Vendors = new SelectList(
@@ -387,8 +577,7 @@ namespace DotNetAssignmentApp.Controllers
                     .OrderBy(v => v.CompanyName)
                     .ToListAsync(),
                 "VendorId",
-                "CompanyName"
-            );
+                "CompanyName");
 
             ViewBag.Items = new SelectList(
                 await _context.Items
@@ -396,8 +585,29 @@ namespace DotNetAssignmentApp.Controllers
                     .OrderBy(i => i.ItemName)
                     .ToListAsync(),
                 "ItemId",
-                "ItemName"
-            );
+                "ItemName");
+        }
+
+        // Dropdowns for Edit
+        private async Task LoadEditDropdowns()
+        {
+            ViewBag.Vendors = new SelectList(
+                await _context.Vendors
+                    .Where(v => v.IsActive)
+                    .OrderBy(v => v.CompanyName)
+                    .ToListAsync(),
+                "VendorId",
+                "CompanyName");
+
+            ViewBag.Items = await _context.Items
+                .Where(i => i.IsActive)
+                .OrderBy(i => i.ItemName)
+                .Select(i => new SelectListItem
+                {
+                    Value = i.ItemId.ToString(),
+                    Text = i.ItemName
+                })
+                .ToListAsync();
         }
     }
 }

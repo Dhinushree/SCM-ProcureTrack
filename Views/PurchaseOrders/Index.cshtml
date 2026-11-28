@@ -38,6 +38,7 @@
 
     <!-- Purchase Order Filters -->
     <div class="card shadow-sm mb-4">
+
         <div class="card-header bg-dark text-white">
             <strong>Search and Filter Purchase Orders</strong>
         </div>
@@ -52,6 +53,7 @@
 
                     <!-- Vendor Filter -->
                     <div class="col-md-3">
+
                         <label for="vendorId" class="form-label">
                             Vendor
                         </label>
@@ -64,10 +66,12 @@
                             <option value="">All Vendors</option>
 
                         </select>
+
                     </div>
 
                     <!-- From Date -->
                     <div class="col-md-3">
+
                         <label for="fromDate" class="form-label">
                             From Date
                         </label>
@@ -77,10 +81,12 @@
                                name="fromDate"
                                value="@ViewBag.FromDate"
                                class="form-control" />
+
                     </div>
 
                     <!-- To Date -->
                     <div class="col-md-3">
+
                         <label for="toDate" class="form-label">
                             To Date
                         </label>
@@ -90,10 +96,12 @@
                                name="toDate"
                                value="@ViewBag.ToDate"
                                class="form-control" />
+
                     </div>
 
                     <!-- Status Filter -->
                     <div class="col-md-3">
+
                         <label for="status" class="form-label">
                             PO Status
                         </label>
@@ -103,6 +111,7 @@
                                 class="form-select"
                                 asp-items="ViewBag.Statuses">
                         </select>
+
                     </div>
 
                 </div>
@@ -129,6 +138,7 @@
 
     <!-- Purchase Order List -->
     <div class="card shadow-sm">
+
         <div class="card-body">
 
             <div class="table-responsive">
@@ -136,6 +146,7 @@
                 <table class="table table-bordered table-hover">
 
                     <thead class="table-dark">
+
                         <tr>
                             <th>PO Number</th>
                             <th>Vendor</th>
@@ -147,6 +158,7 @@
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
+
                     </thead>
 
                     <tbody>
@@ -169,13 +181,21 @@
                                         @po.ExpectedDeliveryDate.ToString("dd-MM-yyyy")
                                     </td>
 
-                                    <td>@po.Subtotal.ToString("N2")</td>
-
-                                    <td>@po.TaxAmount.ToString("N2")</td>
-
-                                    <td>@po.GrandTotal.ToString("N2")</td>
+                                    <td>
+                                        @po.Subtotal.ToString("N2")
+                                    </td>
 
                                     <td>
+                                        @po.TaxAmount.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        @po.GrandTotal.ToString("N2")
+                                    </td>
+
+                                    <!-- PO Status -->
+                                    <td>
+
                                         @if (po.Status == "Draft")
                                         {
                                             <span class="badge bg-secondary">
@@ -212,11 +232,25 @@
                                                 @po.Status
                                             </span>
                                         }
+
                                     </td>
 
+                                    <!-- Actions -->
                                     <td>
+
                                         <div class="d-flex gap-2 flex-wrap">
 
+                                            <!-- Edit Draft PO -->
+                                            @if (po.Status == "Draft")
+                                            {
+                                                <a asp-action="Edit"
+                                                   asp-route-id="@po.PurchaseOrderId"
+                                                   class="btn btn-sm btn-warning">
+                                                    Edit
+                                                </a>
+                                            }
+
+                                            <!-- Approve Draft PO -->
                                             @if (po.Status == "Draft")
                                             {
                                                 <form asp-action="Approve"
@@ -233,6 +267,7 @@
                                                 </form>
                                             }
 
+                                            <!-- Receive Goods -->
                                             @if (po.Status == "Approved" ||
                                                  po.Status == "Partially Received")
                                             {
@@ -244,6 +279,7 @@
                                                 </a>
                                             }
 
+                                            <!-- Cancel PO -->
                                             @if (po.Status == "Draft" ||
                                                  po.Status == "Approved")
                                             {
@@ -262,6 +298,7 @@
                                                 </form>
                                             }
 
+                                            <!-- No further actions -->
                                             @if (po.Status == "Completed" ||
                                                  po.Status == "Cancelled" ||
                                                  po.Status == "Partially Received")
@@ -272,6 +309,7 @@
                                             }
 
                                         </div>
+
                                     </td>
 
                                 </tr>
